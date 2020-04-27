@@ -53,7 +53,9 @@ namespace EmagAPITest
 
         private async void buttonUpdate_Click(object sender, EventArgs e)
         {
-            await UpdateEmagJson();
+            //await UpdateEmagJson();
+            await UpdateEmagMultipartFomrData();
+            //await UpdateEmagFormUrlEncoded();
         }
 
         private async Task UpdateEmagJson()
@@ -70,13 +72,13 @@ namespace EmagAPITest
                     vat_id = 1
                 };
                 offers.Add(offer);
-
-                var postData = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(offers));
+                var data = new { data = offers };
+                var postData = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(data));
 
 
                 using (HttpClient httpClient = new HttpClient())
                 {
-                    var request = new HttpRequestMessage(HttpMethod.Put, "https://marketplace-api.emag.ro/api-3/product_offer/save");
+                    var request = new HttpRequestMessage(HttpMethod.Post, "https://marketplace-api.emag.ro/api-3/product_offer/save");
                     httpClient.DefaultRequestHeaders.Add("ContentType", "application/json");
 
                     var authDataBytes = Encoding.UTF8.GetBytes("USER:PAROLA");
@@ -96,7 +98,7 @@ namespace EmagAPITest
             }
         }
 
-        private async Task UpdateEmagFormUrl()
+        private async Task UpdateEmagFormUrlEncoded()
         {
             try
             {
@@ -118,8 +120,50 @@ namespace EmagAPITest
 
                 using (HttpClient httpClient = new HttpClient())
                 {
-                    var request = new HttpRequestMessage(HttpMethod.Put, "https://marketplace-api.emag.ro/api-3/product_offer/save");
+                    var request = new HttpRequestMessage(HttpMethod.Post, "https://marketplace-api.emag.ro/api-3/product_offer/save");
                     httpClient.DefaultRequestHeaders.Add("ContentType", "application/x-www-form-urlencoded");
+                    var authDataBytes = Encoding.UTF8.GetBytes("USER:PAROLA");
+                    string val = Convert.ToBase64String(authDataBytes);
+                    httpClient.DefaultRequestHeaders.Add("Authorization", "Basic " + val);
+
+                    request.Content = postData;
+
+
+                    HttpResponseMessage response = await httpClient.SendAsync(request);
+
+                    richTextBoxResponse.Text = await response.Content.ReadAsStringAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Eroare");
+            }
+        }
+
+        private async Task UpdateEmagMultipartFomrData()
+        {
+            try
+            {
+                List<OfferUpdate> offers = new List<OfferUpdate>();
+                var offer = new OfferUpdate
+                {
+                    id = 2,
+                    status = 1,
+                    sale_price = 63,
+                    vat_id = 1
+                };
+                offers.Add(offer);
+
+                var keyValueList = new List<KeyValuePair<string, string>>();
+                keyValueList.Add(new KeyValuePair<string, string>("data", JsonConvert.SerializeObject(offers)));
+
+                var postData = new FormUrlEncodedContent(keyValueList);
+
+
+                using (HttpClient httpClient = new HttpClient())
+                {
+                    var request = new HttpRequestMessage(HttpMethod.Post, "https://marketplace-api.emag.ro/api-3/product_offer/save");
+                    httpClient.DefaultRequestHeaders.Add("ContentType", "multipart/form-data");
                     var authDataBytes = Encoding.UTF8.GetBytes("USER:PAROLA");
                     string val = Convert.ToBase64String(authDataBytes);
                     httpClient.DefaultRequestHeaders.Add("Authorization", "Basic " + val);
